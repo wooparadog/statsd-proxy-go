@@ -81,6 +81,7 @@ func ProcessMsgs(s server.Server, ss *sender.Senders) {
 func main() {
 	hash_ring = consistenthash.New(nil)
 	hosts := []string{
+		//"127.0.0.1:8005",
 		"10.0.12.101:8127",
 		"10.0.12.101:8128",
 		"10.0.12.101:8129",

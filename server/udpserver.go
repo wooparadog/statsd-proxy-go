@@ -29,7 +29,7 @@ ioloop:
 			log.Println("Exiting IOLoop")
 			break ioloop
 		default:
-			n, _, err := s.conn.ReadFromUDP(buffer)
+			n, _, err := s.conn.ReadFromUDP(buffer[0:])
 			if err != nil {
 				log.Println("Error in loop:", err)
 				continue
