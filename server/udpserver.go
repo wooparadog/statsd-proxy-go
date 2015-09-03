@@ -34,7 +34,7 @@ ioloop:
 				log.Println("Error in loop:", err)
 				continue
 			}
-			s.out_chan <- buffer[:n]
+			s.out_chan <- buffer[0:n]
 		}
 	}
 }

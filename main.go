@@ -49,7 +49,7 @@ ioloop:
 				}
 				if b == 10 {
 					if !overflow {
-						s.Send(metrics[:cursor])
+						s.Send(metrics[0:cursor])
 					}
 					cursor = 0
 					overflow = false
@@ -59,14 +59,14 @@ ioloop:
 					continue
 				}
 				if b == 58 {
-					host := hash_ring.Get(metrics[:cursor])
+					host := hash_ring.Get(metrics[0:cursor])
 					s = senders.Get(host)
 				}
 				metrics[cursor] = b
 				cursor += 1
 			}
 			if cursor > 0 {
-				s.Send(metrics[:cursor])
+				s.Send(metrics[0:cursor])
 			}
 		}
 	}
