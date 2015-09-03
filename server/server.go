@@ -9,12 +9,13 @@ type Server interface {
 	IOLoop()
 	Close()
 	GetOutChan() chan []byte
+	GetExitChan() chan int
 }
 
-func NewServer(kind string, addr *net.UDPAddr) Server {
+func NewServer(kind string, addr net.Addr) Server {
 	var s Server
 	if kind == "udp" {
-		s = NewUdpServer(addr)
+		s = NewUdpServer(addr.(*net.UDPAddr))
 	} else {
 		log.Fatal("Wrong server type, should be `udp` or ...: ", kind)
 	}

@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 type payload struct {
@@ -20,14 +21,21 @@ var hash_ring *consistenthash.Map
 
 const MAX_METRICS_LEN = 2048
 
-func processMsg(id int, msg_chan chan []byte, senders *sender.Senders) {
+func processMsg(id int, srv server.Server, senders *sender.Senders) {
 	metrics := make([]byte, MAX_METRICS_LEN)
 	var s sender.Sender
 	var cursor int
 	var overflow bool
 
+	msg_chan := srv.GetOutChan()
+	exit_chan := srv.GetExitChan()
+
+ioloop:
 	for {
 		select {
+		case <-exit_chan:
+			log.Println("Closing worker: ", id)
+			break ioloop
 		case payload := <-msg_chan:
 			if payload == nil {
 				log.Println(payload)
@@ -66,7 +74,7 @@ func processMsg(id int, msg_chan chan []byte, senders *sender.Senders) {
 
 func ProcessMsgs(s server.Server, ss *sender.Senders) {
 	for i := 0; i < 10; i++ {
-		go processMsg(i, s.GetOutChan(), ss)
+		go processMsg(i, s, ss)
 	}
 }
 
@@ -92,7 +100,9 @@ func main() {
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
 	<-signalChan
-	senders.Close()
+	log.Println("Got signal, gracefully shutting donw(wait 3sec)")
 	server.Close()
+	time.Sleep(3 * time.Second)
+	senders.Close()
 	log.Println("Quiting")
 }

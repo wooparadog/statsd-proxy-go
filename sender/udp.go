@@ -5,11 +5,6 @@ import (
 	"net"
 )
 
-type Sender interface {
-	Send([]byte) error
-	Close() error
-}
-
 type UdpSender struct {
 	backend_addr *net.UDPAddr
 	admin_addr   *net.TCPAddr
@@ -36,7 +31,7 @@ func (s *UdpSender) Send(payload []byte) error {
 	log.Println(s.backend_addr)
 	_, err := s.conn.Write(payload)
 	if err != nil {
-		log.Println(err)
+		log.Println("Error sending msg", err)
 		return err
 	}
 	return nil
