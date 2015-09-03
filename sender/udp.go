@@ -20,6 +20,7 @@ func NewUdpSender(backend_addr *net.UDPAddr, admin_addr *net.TCPAddr) Sender {
 	if err != nil {
 		log.Fatalln("Shit happened")
 	}
+	udp_conn.SetWriteBuffer(10485760)
 	return &UdpSender{
 		backend_addr: backend_addr,
 		admin_addr:   admin_addr,

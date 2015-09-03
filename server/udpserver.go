@@ -21,7 +21,7 @@ func (s *UdpServer) GetOutChan() chan []byte {
 }
 
 func (s *UdpServer) IOLoop() {
-	buffer := make([]byte, 2048)
+	buffer := [2048]byte{}
 ioloop:
 	for {
 		select {
@@ -34,7 +34,9 @@ ioloop:
 				log.Println("Error in loop:", err)
 				continue
 			}
-			s.out_chan <- buffer[0:n]
+			data := make([]byte, n)
+			copy(data, buffer[:n])
+			s.out_chan <- data
 		}
 	}
 }
