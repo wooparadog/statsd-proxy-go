@@ -1,22 +1,30 @@
 package consistenthash
 
 import (
+	lru "github.com/hashicorp/golang-lru"
 	"hash/crc32"
+	"log"
 	"sort"
 )
 
 type Hash func(data []byte) uint32
 
 type Map struct {
-	hash    Hash
-	keys    []int
-	hashMap map[int]string
+	hash      Hash
+	keys      []int
+	hashMap   map[int]string
+	lru_cache *lru.Cache
 }
 
 func New(fn Hash) *Map {
+	lru_cache, err := lru.New(50000)
+	if err != nil {
+		log.Fatal("Lru cache failed")
+	}
 	m := &Map{
-		hash:    fn,
-		hashMap: make(map[int]string),
+		hash:      fn,
+		hashMap:   make(map[int]string),
+		lru_cache: lru_cache,
 	}
 	if m.hash == nil {
 		m.hash = crc32.ChecksumIEEE
@@ -44,9 +52,16 @@ func (m *Map) CalculateHash(keys ...string) ([]int, map[int]string) {
 
 func (m *Map) Populate(keys ...string) {
 	m.keys, m.hashMap = m.CalculateHash(keys...)
+	m.lru_cache.Purge()
 }
 
 func (m *Map) Get(key []byte) string {
+	lru_key := string(key)
+	result, ok := m.lru_cache.Get(lru_key)
+	if ok {
+		return result.(string)
+	}
+	log.Println("Got new metrics not in cache: ", lru_key)
 	if m.IsEmpty() {
 		return ""
 	}
@@ -59,5 +74,7 @@ func (m *Map) Get(key []byte) string {
 		idx = 0
 	}
 
-	return m.hashMap[m.keys[idx]]
+	r := m.hashMap[m.keys[idx]]
+	m.lru_cache.Add(lru_key, r)
+	return r
 }
