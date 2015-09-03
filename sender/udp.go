@@ -7,6 +7,7 @@ import (
 
 type Sender interface {
 	Send([]byte) error
+	Close() error
 }
 
 type UdpSender struct {
@@ -15,7 +16,11 @@ type UdpSender struct {
 	conn         *net.UDPConn
 }
 
-func NewUdpSender(backend_addr *net.UDPAddr, admin_addr *net.TCPAddr) *UdpSender {
+func (s *UdpSender) Close() error {
+	return s.conn.Close()
+}
+
+func NewUdpSender(backend_addr *net.UDPAddr, admin_addr *net.TCPAddr) Sender {
 	udp_conn, err := net.DialUDP("udp4", nil, backend_addr)
 	if err != nil {
 		log.Fatalln("Shit happened")
@@ -29,11 +34,10 @@ func NewUdpSender(backend_addr *net.UDPAddr, admin_addr *net.TCPAddr) *UdpSender
 
 func (s *UdpSender) Send(payload []byte) error {
 	log.Println(s.backend_addr)
-	length, err := s.conn.Write(payload)
+	_, err := s.conn.Write(payload)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-	log.Println(length, " sent")
 	return nil
 }
