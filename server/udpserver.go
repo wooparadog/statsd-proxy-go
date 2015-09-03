@@ -47,6 +47,7 @@ func (s *UdpServer) Close() {
 
 func NewUdpServer(addr *net.UDPAddr) *UdpServer {
 	conn, err := net.ListenUDP("udp4", addr)
+	conn.SetReadBuffer(10485760)
 	if err != nil {
 		log.Fatalln(err)
 	}
