@@ -10,7 +10,11 @@ type Senders struct {
 }
 
 func (senders *Senders) Get(name string) Sender {
-	return senders.senders[name]
+	val, ok := senders.senders[name]
+	if !ok {
+		log.Fatalln("Fail to get sender: ", name)
+	}
+	return val
 }
 
 func NewSenders(kind string, hosts ...string) *Senders {
