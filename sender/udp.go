@@ -28,7 +28,6 @@ func NewUdpSender(backend_addr *net.UDPAddr, admin_addr *net.TCPAddr) Sender {
 }
 
 func (s *UdpSender) Send(payload []byte) error {
-	log.Println(s.backend_addr)
 	_, err := s.conn.Write(payload)
 	if err != nil {
 		log.Println("Error sending msg", err)
