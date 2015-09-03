@@ -1,9 +1,9 @@
 package main
 
 import (
-	sender "github.com/wooparadog/statsd-proxy/sender"
-	server "github.com/wooparadog/statsd-proxy/server"
-	consistenthash "github.com/wooparadog/statsd-proxy/utils"
+	sender "github.com/wooparadog/statsd-proxy-go/sender"
+	server "github.com/wooparadog/statsd-proxy-go/server"
+	consistenthash "github.com/wooparadog/statsd-proxy-go/utils"
 	"log"
 	"net"
 	"os"
