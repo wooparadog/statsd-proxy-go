@@ -3,8 +3,10 @@ package server
 import (
 	"log"
 	"net"
+	"time"
 )
 
+const BUFFERSIZE int = 1 * 1024 * 1024 // 1MiB
 type UdpServer struct {
 	Addr      *net.UDPAddr
 	out_chan  chan []byte
@@ -21,7 +23,10 @@ func (s *UdpServer) GetOutChan() chan []byte {
 }
 
 func (s *UdpServer) IOLoop() {
-	var buffer []byte
+	var buff *[BUFFERSIZE]byte
+	var offset int
+	var timeout bool
+
 ioloop:
 	for {
 		select {
@@ -29,13 +34,42 @@ ioloop:
 			log.Println("Exiting IOLoop")
 			break ioloop
 		default:
-			buffer = make([]byte, 2048)
-			n, err := s.conn.Read(buffer[0:])
-			if err != nil {
-				log.Println("Error in loop:", err)
-				continue
+			for {
+				if buff == nil {
+					buff = new([BUFFERSIZE]byte)
+					offset = 0
+					timeout = false
+				}
+
+				i, err := s.conn.Read(buff[offset:])
+				if err == nil {
+					buff[offset+i] = '\n'
+					offset = offset + i + 1
+				} else if err.(net.Error).Timeout() {
+					timeout = true
+					err = s.conn.SetDeadline(time.Now().Add(time.Second))
+					if err != nil {
+						log.Panicln(err)
+					}
+				} else {
+					log.Printf("Read Error: %s\n", err)
+					continue
+				}
+
+				if offset > BUFFERSIZE-4096 || timeout {
+					// Approching make buff size
+					// we use a 4KiB margin
+					s.out_chan <- buff[:offset]
+					buff = nil
+				}
+				buffer := make([]byte, 2048)
+				n, err := s.conn.Read(buffer[0:])
+				if err != nil {
+					log.Println("Error in loop:", err)
+					continue
+				}
+				s.out_chan <- buffer[:n]
 			}
-			s.out_chan <- buffer[:n]
 		}
 	}
 }
@@ -51,15 +85,13 @@ func NewUdpServer(addr *net.UDPAddr) *UdpServer {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	conn.SetReadBuffer(10485760)
+	conn.SetReadBuffer(16777216)
 	server := &UdpServer{
 		conn:      conn,
 		Addr:      addr,
 		out_chan:  make(chan []byte, 256),
 		exit_chan: make(chan int),
 	}
-	for i := 0; i < 10; i++ {
-		go server.IOLoop()
-	}
+	go server.IOLoop()
 	return server
 }
