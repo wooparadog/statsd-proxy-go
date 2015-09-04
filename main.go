@@ -75,7 +75,7 @@ ioloop:
 }
 
 func ProcessMsgs(s server.Server, ss *sender.Senders) {
-	for i := 0; i < 1024; i++ {
+	for i := 0; i < 24; i++ {
 		go processMsg(i, s, ss)
 	}
 }
