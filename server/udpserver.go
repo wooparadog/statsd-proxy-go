@@ -55,7 +55,7 @@ func NewUdpServer(addr *net.UDPAddr) *UdpServer {
 	server := &UdpServer{
 		conn:      conn,
 		Addr:      addr,
-		out_chan:  make(chan []byte),
+		out_chan:  make(chan []byte, 256),
 		exit_chan: make(chan int),
 	}
 	for i := 0; i < 10; i++ {
