@@ -10,7 +10,6 @@ import (
 	"os/signal"
 	"runtime"
 	"syscall"
-	"time"
 )
 
 type payload struct {
@@ -61,12 +60,14 @@ func processMsg(payload []byte, srv server.Server, senders *sender.Senders) {
 }
 func dispatcher(s server.Server, ss *sender.Senders) {
 	msg_chan := s.GetOutChan()
-	exit_chan := s.GetExitChan()
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
 
 ioloop:
 	for {
 		select {
-		case <-exit_chan:
+		case <-signalChan:
+			log.Println("Got signal, shutting donw")
 			break ioloop
 		case payload := <-msg_chan:
 			go processMsg(payload, s, ss)
@@ -121,15 +122,6 @@ func main() {
 
 	senders := sender.NewSenders("udp", hosts...)
 	server := server.NewServer("udp", &net.UDPAddr{Port: 8125, IP: net.IP{0, 0, 0, 0}})
-
 	dispatcher(server, senders)
-
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
-	<-signalChan
-	log.Println("Got signal, gracefully shutting donw(wait 3sec)")
-	server.Close()
-	time.Sleep(3 * time.Second)
-	senders.Close()
 	log.Println("Quiting")
 }

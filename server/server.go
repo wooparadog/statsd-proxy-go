@@ -9,7 +9,6 @@ type Server interface {
 	IOLoop()
 	Close()
 	GetOutChan() chan []byte
-	GetExitChan() chan int
 }
 
 func NewServer(kind string, addr net.Addr) Server {
