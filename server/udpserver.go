@@ -51,13 +51,6 @@ func (s *UdpServer) IOLoop() {
 			s.out_chan <- buff[:offset]
 			buff = nil
 		}
-		buffer := make([]byte, 2048)
-		n, err := s.conn.Read(buffer[0:])
-		if err != nil {
-			log.Println("Error in loop:", err)
-			continue
-		}
-		s.out_chan <- buffer[:n]
 	}
 }
 
