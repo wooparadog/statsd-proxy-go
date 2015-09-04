@@ -50,6 +50,14 @@ func (m *Map) CalculateHash(keys ...string) ([]int, map[int]string) {
 	return hashed_keys, hash_map
 }
 
+func (m *Map) Members() []string {
+	var r []string
+	for _, v := range m.hashMap {
+		r = append(r, v)
+	}
+	return r
+}
+
 func (m *Map) Populate(keys ...string) {
 	m.keys, m.hashMap = m.CalculateHash(keys...)
 	m.lru_cache.Purge()

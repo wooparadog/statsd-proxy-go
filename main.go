@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	sender "github.com/wooparadog/statsd-proxy-go/sender"
 	server "github.com/wooparadog/statsd-proxy-go/server"
 	consistenthash "github.com/wooparadog/statsd-proxy-go/utils"
@@ -23,41 +24,62 @@ const MAX_METRICS_LEN = 2048
 
 func processMsg(payload []byte, srv server.Server, senders *sender.Senders) {
 	var s sender.Sender
+	var host string
 	if payload == nil {
 		log.Println(payload)
 		return
 	}
+
+	members := hash_ring.Members()
+	hash := make(map[string]*bytes.Buffer, len(members))
+
+	for _, v := range members {
+		hash[v] = new(bytes.Buffer)
+	}
+
 	cursor := 0
 	offset := 0
-	overflow := false
+	sep := []byte("\n")
 
 	for n, b := range payload {
-		if offset-cursor >= MAX_METRICS_LEN {
-			log.Println("Overflow metrics")
-			overflow = true
-		}
-		if b == 10 {
-			if !overflow {
-				s.Send(payload[offset:cursor])
+		if b == '\n' || b == 0 {
+			if host == "" {
+				log.Println("!!!!")
 			}
+
+			size := cursor - offset
+			// check built packet size and send if metric doesn't fit
+			if hash[host].Len()+size > 1000 {
+				s = senders.Get(host)
+				s.Send(hash[host].Bytes())
+				hash[host].Reset()
+			}
+			// add to packet
+			hash[host].Write(payload[offset:cursor])
+			hash[host].Write(sep)
 			offset = n + 1
 			cursor = offset
-			overflow = false
-			continue
-		}
-		if overflow {
 			continue
 		}
 		if b == 58 {
-			host := hash_ring.Get(payload[offset:cursor])
-			s = senders.Get(host)
+			host = hash_ring.Get(payload[offset:cursor])
 		}
 		cursor += 1
 	}
 	if cursor > offset {
-		s.Send(payload[offset:cursor])
+		hash[host].Write(payload[offset:cursor])
+		hash[host].Write(sep)
+	}
+
+	// Empty out any remaining data
+	for server, buff := range hash {
+		if buff.Len() > 0 {
+			s = senders.Get(server)
+			s.Send(buff.Bytes())
+		}
 	}
 }
+
 func dispatcher(s server.Server, ss *sender.Senders) {
 	msg_chan := s.GetOutChan()
 	signalChan := make(chan os.Signal, 1)
