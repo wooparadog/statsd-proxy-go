@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 )
@@ -79,6 +80,7 @@ func ProcessMsgs(s server.Server, ss *sender.Senders) {
 }
 
 func main() {
+	runtime.GOMAXPROCS(24)
 	hash_ring = consistenthash.New(nil)
 	hosts := []string{
 		//"127.0.0.1:8005",

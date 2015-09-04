@@ -21,7 +21,7 @@ func (s *UdpServer) GetOutChan() chan []byte {
 }
 
 func (s *UdpServer) IOLoop() {
-	buffer := [2048]byte{}
+	var buffer []byte
 ioloop:
 	for {
 		select {
@@ -29,14 +29,13 @@ ioloop:
 			log.Println("Exiting IOLoop")
 			break ioloop
 		default:
-			n, _, err := s.conn.ReadFromUDP(buffer[0:])
+			buffer = make([]byte, 2048)
+			n, err := s.conn.Read(buffer[0:])
 			if err != nil {
 				log.Println("Error in loop:", err)
 				continue
 			}
-			data := make([]byte, n)
-			copy(data, buffer[:n])
-			s.out_chan <- data
+			s.out_chan <- buffer[:n]
 		}
 	}
 }
@@ -59,6 +58,8 @@ func NewUdpServer(addr *net.UDPAddr) *UdpServer {
 		out_chan:  make(chan []byte),
 		exit_chan: make(chan int),
 	}
-	go server.IOLoop()
+	for i := 0; i < 10; i++ {
+		go server.IOLoop()
+	}
 	return server
 }
