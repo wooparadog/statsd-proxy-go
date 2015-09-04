@@ -47,7 +47,7 @@ func (s *UdpServer) Close() {
 }
 
 func NewUdpServer(addr *net.UDPAddr) *UdpServer {
-	conn, err := net.ListenUDP("udp4", addr)
+	conn, err := net.ListenUDP("udp", addr)
 	if err != nil {
 		log.Fatalln(err)
 	}
