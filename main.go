@@ -23,9 +23,9 @@ var hash_ring *consistenthash.Map
 const MAX_METRICS_LEN = 2048
 
 func processMsg(id int, srv server.Server, senders *sender.Senders) {
-	metrics := make([]byte, MAX_METRICS_LEN)
 	var s sender.Sender
 	var cursor int
+	var offset int
 	var overflow bool
 
 	msg_chan := srv.GetOutChan()
@@ -43,16 +43,18 @@ ioloop:
 				continue
 			}
 			cursor = 0
-			for _, b := range payload {
+			offset = 0
+			for n, b := range payload {
 				if cursor >= MAX_METRICS_LEN {
 					log.Println("Overflow metrics")
 					overflow = true
 				}
 				if b == 10 {
 					if !overflow {
-						s.Send(metrics[0:cursor])
+						s.Send(payload[offset:cursor])
 					}
-					cursor = 0
+					offset = n + 1
+					cursor = offset
 					overflow = false
 					continue
 				}
@@ -60,14 +62,13 @@ ioloop:
 					continue
 				}
 				if b == 58 {
-					host := hash_ring.Get(metrics[0:cursor])
+					host := hash_ring.Get(payload[offset:cursor])
 					s = senders.Get(host)
 				}
-				metrics[cursor] = b
 				cursor += 1
 			}
-			if cursor > 0 {
-				s.Send(metrics[0:cursor])
+			if cursor > offset {
+				s.Send(payload[offset:cursor])
 			}
 		}
 	}
