@@ -56,12 +56,12 @@ func (m *Map) Populate(keys ...string) {
 }
 
 func (m *Map) Get(key []byte) string {
-	lru_key := string(key)
-	result, ok := m.lru_cache.Get(lru_key)
-	if ok {
-		return result.(string)
-	}
-	log.Println("Got new metrics not in cache: ", lru_key)
+	//lru_key := string(key)
+	//result, ok := m.lru_cache.Get(lru_key)
+	//if ok {
+	//	return result.(string)
+	//}
+	//log.Println("Got new metrics not in cache: ", lru_key)
 	if m.IsEmpty() {
 		return ""
 	}
@@ -75,6 +75,6 @@ func (m *Map) Get(key []byte) string {
 	}
 
 	r := m.hashMap[m.keys[idx]]
-	m.lru_cache.Add(lru_key, r)
+	//m.lru_cache.Add(lru_key, r)
 	return r
 }
